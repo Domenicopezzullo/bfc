@@ -1,10 +1,10 @@
 package targets
 
-import ".."
+import "../lexer"
 import "core:fmt"
 import "core:strings"
 
-codegen :: proc(tokens: []Token) -> strings.Builder {
+codegen :: proc(tokens: []lexer.Token) -> strings.Builder {
 	out := strings.builder_make()
 	loop_counter := 0
 	input_counter := 0

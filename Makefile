@@ -2,7 +2,7 @@
 
 all: bfc
 
-bfc: src/lexer.odin src/main.odin src/targets/nasm.odin
+bfc: src/lexer/lexer.odin src/main.odin src/targets/nasm.odin
 	odin build src -o:speed -out:bfc
 
 clean:
