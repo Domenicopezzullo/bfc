@@ -1,1 +1,4 @@
 bfc
+examples/*.asm
+examples/*.o
+examples/main
