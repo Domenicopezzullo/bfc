@@ -7,6 +7,7 @@ import "core:strings"
 x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) {
 	loop_counter := 0
 	input_counter := 0
+	index := 0
 	loop_stack: [dynamic]int
 	defer delete(loop_stack)
 
@@ -18,12 +19,22 @@ x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) {
 	strings.write_string(out, "_start:\n")
 	strings.write_string(out, "\tmov rsi, tape\n")
 
-	for token in tokens {
-		switch token.TokenType {
+	for index < len(tokens) {
+		switch tokens[index].TokenType {
 		case .PLUS:
-			strings.write_string(out, "\tinc byte [rsi]\n")
+			increments := 0
+			for index < len(tokens) && tokens[index].TokenType == .PLUS {
+				increments += 1
+				index += 1
+			}
+			fmt.sbprintf(out, "\tadd [rsi], %d\n", increments)
 		case .MINUS:
-			strings.write_string(out, "\tdec byte [rsi]\n")
+			decrements := 0
+			for index < len(tokens) && tokens[index].TokenType == .MINUS {
+				decrements += 1
+				index += 1
+			}
+			fmt.sbprintf(out, "\tsub [rsi], %d\n", decrements)
 		case .RIGHT:
 			fmt.sbprintf(
 				out,
@@ -31,11 +42,14 @@ x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) {
 				30000 - 1,
 			)
 			strings.write_string(out, "\tinc rsi\n")
+			index += 1
 		case .LEFT:
 			strings.write_string(out, "\tcmp rsi, tape\n\tje ptr_underflow\n")
 			strings.write_string(out, "\tdec rsi\n")
+			index += 1
 		case .OUTPUT:
 			strings.write_string(out, "\tmov rax, 1\n\tmov rdi, 1\n\tmov rdx, 1\n\tsyscall\n")
+			index += 1
 		case .INPUT:
 			fmt.sbprintf(out, "\tread_input_%d:\n", input_counter)
 			fmt.sbprintf(out, "\tmov rax, 0\n")
@@ -44,6 +58,7 @@ x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) {
 			fmt.sbprintf(out, "\tsyscall\n")
 			fmt.sbprintf(out, "input_done_%d:\n", input_counter)
 			input_counter += 1
+			index += 1
 		case .OPEN:
 			fmt.sbprintf(
 				out,
@@ -53,10 +68,12 @@ x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) {
 			)
 			append(&loop_stack, loop_counter)
 			loop_counter += 1
+			index += 1
 		case .CLOSE:
 			last := loop_stack[len(loop_stack) - 1]
 			pop(&loop_stack)
 			fmt.sbprintf(out, "\tjmp loop_start_%d\nloop_end_%d:\n", last, last)
+			index += 1
 		}
 	}
 
@@ -76,3 +93,4 @@ x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) {
 
 	write_string_builder_to_file(out, "out.asm")
 }
+

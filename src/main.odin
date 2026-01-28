@@ -14,9 +14,10 @@ Target :: enum {
 }
 
 Args :: struct {
-	filename: string `args:"pos=0,required"    usage:"Brainfuck source to compile"`,
-	target:   Target `args:"name=target"      usage:"Which target to compile for (x86_64, aarch64)"`,
-	output:   string `args:"name=output"       usage:"Where to output the file"`,
+	filename:    string `args:"pos=0,required"    usage:"Brainfuck source to compile"`,
+	target:      Target `args:"name=target"      usage:"Which target to compile for (x86_64, aarch64)"`,
+	output:      string `args:"name=output"       usage:"Where to output the file"`,
+	compileonly: bool `usage:"If only to compile and exit"`,
 }
 
 error :: proc(msg: ..string) {
@@ -47,21 +48,24 @@ main :: proc() {
 	}
 	asm_command: []string
 	if args.target == .x86_64 do asm_command = {"nasm", "-felf64", "out.asm"}
-	else if args.target == -.aarch64 do asm_command = {"aarch64-linux-gnu-as", "-o", "out.o", "out.asm"}
+	else if args.target == -.aarch64 do asm_command = {"as", "-o", "out.o", "out.asm"}
 	ld_command: []string
 	if args.target == .x86_64 do ld_command = {"ld", "-o", args.output, "out.o"}
-	else if args.target == .aarch64 do ld_command = {"aarch64-linux-gnu-ld", "-o", args.output, "out.o"}
+	else if args.target == .aarch64 do ld_command = {"ld", "-o", args.output, "out.o"}
 	asm_state, _, stderr, _ := os2.process_exec(
 		os2.Process_Desc{command = asm_command},
-		context.allocator,
+		context.temp_allocator,
 	)
 	defer delete(stderr)
 	when ODIN_DEBUG do fmt.eprintln((string)(stderr))
 	if !asm_state.success do error("Failed to assemble out.asm (do you have \"as\" installed?)")
-	else do defer os.remove("out.asm")
+	else do if args.compileonly {
+		os.remove("out.o")
+		os.exit(0)
+	} else do defer {os.remove("out.asm")}
 	ld_state, _, _, _ := os2.process_exec(
 		os2.Process_Desc{command = ld_command},
-		context.allocator,
+		context.temp_allocator,
 	)
 	if ld_state.success do if err := os.remove("out.o"); err != nil do error("failed to delete out.o")
 }
