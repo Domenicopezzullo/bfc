@@ -4,10 +4,11 @@ import "../lexer"
 import "core:fmt"
 import "core:strings"
 
-x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) -> strings.Builder {
+x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) {
 	loop_counter := 0
 	input_counter := 0
 	loop_stack: [dynamic]int
+	defer delete(loop_stack)
 
 	strings.write_string(out, "default abs\n")
 	strings.write_string(out, "section .bss\n")
@@ -74,5 +75,4 @@ x86_64 :: proc(tokens: []lexer.Token, out: ^strings.Builder) -> strings.Builder 
 	strings.write_string(out, "\tsyscall\n")
 
 	write_string_builder_to_file(out, "out.asm")
-	return out^
 }

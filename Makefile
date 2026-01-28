@@ -7,8 +7,3 @@ bfc: src/lexer/lexer.odin src/main.odin src/targets/x86_64.odin
 
 clean:
 	rm -rf *.o *.asm bfc 
-
-examples: examples/echo.bf
-	./bfc examples/echo.bf > examples/main.asm
-	nasm -felf64 examples/main.asm -o examples/main.o
-	ld -o examples/main examples/main.o
